@@ -1,8 +1,9 @@
 "use client";
 
+/* eslint @next/next/no-html-link-for-pages: "off" -- Use document navigation for the hosted gallery. */
+
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ImagePlus, Link2, LoaderCircle, X } from "lucide-react";
-import Link from "next/link";
 import ExhibitionView from "./exhibition";
 import GalleryWorld from "./world";
 import { defaultTitle, demoArtworks, type Artwork } from "./lib/exhibition";
@@ -154,8 +155,8 @@ export default function Home() {
   return (
     <main className="create-screen">
       <header className="topbar">
-        <Link href="/" className="wordmark">stillroom<span>.</span></Link>
-        <Link className="text-button" href="/g/demo">Visit the sample <ArrowRight size={16} /></Link>
+        <a href="/" className="wordmark">stillroom<span>.</span></a>
+        <a className="text-button" href="/g/demo">Visit the sample <ArrowRight size={16} /></a>
       </header>
       <section className="intro">
         <div className="intro-copy">
@@ -165,7 +166,7 @@ export default function Home() {
         </div>
         <figure className="gallery-preview">
           <div className="preview-stage"><GalleryWorld artworks={demoArtworks} preview minimumRooms={3} /></div>
-          <figcaption><span>The Shape of Quiet</span><Link href="/g/demo">Enter sample exhibition <ArrowRight size={15} /></Link></figcaption>
+          <figcaption><span>The Shape of Quiet</span><a href="/g/demo">Enter sample exhibition <ArrowRight size={15} /></a></figcaption>
         </figure>
       </section>
       <section className="create-area" id="create">

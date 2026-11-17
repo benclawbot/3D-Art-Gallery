@@ -1,8 +1,9 @@
 "use client";
 
+/* eslint @next/next/no-html-link-for-pages: "off" -- Use document navigation for the hosted gallery. */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronLeft, ChevronRight, Images, Link2, X } from "lucide-react";
-import Link from "next/link";
 import { type Exhibition } from "./lib/exhibition";
 import { createGalleryLayout } from "./lib/gallery-layout";
 import GalleryWorld from "./world";
@@ -73,7 +74,7 @@ export default function ExhibitionView({ gallery, onExit }: { gallery: Exhibitio
         <div className="viewer-brand">
           {onExit
             ? <button type="button" className="back-button" onClick={onExit} aria-label="Back to your photographs"><ArrowLeft size={18} /></button>
-            : <Link href="/" aria-label="Stillroom home" className="wordmark">stillroom<span>.</span></Link>}
+            : <a href="/" aria-label="Stillroom home" className="wordmark">stillroom<span>.</span></a>}
           <div className="exhibition-header">
             <h1 className="viewer-title">{gallery.title}</h1>
             {sample && <span className="sample-label">Sample exhibition</span>}
