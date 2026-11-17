@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T22:45:08Z",
+  "title": "Design System — Stillroom",
+  "extensions": {
+    "colorMeta": {
+      "olive": { "role": "primary", "displayName": "Olive" },
+      "paper": { "role": "neutral", "displayName": "Parchment" },
+      "ink": { "role": "neutral", "displayName": "Warm Ink" },
+      "dark-room": { "role": "neutral", "displayName": "Charcoal Brown" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Editorial Display", "purpose": "Introduces the creation screen." },
+      "headline": { "displayName": "Section Heading", "purpose": "Labels the creation form." },
+      "title": { "displayName": "Exhibition Title", "purpose": "Names the exhibition on the viewer plate." },
+      "body": { "displayName": "Body", "purpose": "Sets explanatory text and field values." },
+      "label": { "displayName": "Action Label", "purpose": "Sets creation and publishing actions." }
+    },
+    "motion": [
+      { "name": "busy-spin", "value": "950ms linear infinite", "purpose": "Rotates the busy indicator during publishing. Reduced motion disables the animation." }
+    ],
+    "breakpoints": [
+      { "name": "stack-keyboard-hint", "value": "1050px" },
+      { "name": "stack-introduction", "value": "790px" },
+      { "name": "compact-photo-controls", "value": "490px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Filled olive action for creating or publishing an exhibition.",
+      "html": "<button type=\"button\" class=\"ds-primary\">Publish gallery <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14m-7-7 7 7-7 7\"/></svg></button>",
+      "css": ".ds-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; padding: 10px 16px; border: 1px solid transparent; border-radius: 0; background: var(--olive, #545c42); color: #fffdf9; font: 600 13px/1.55 var(--sans, 'DM Sans', sans-serif); cursor: pointer; } .ds-primary:hover:not(:disabled) { background: #414934; } .ds-primary:focus-visible { outline: 2px solid #69572b; outline-offset: 4px; } .ds-primary:disabled { opacity: 0.55; cursor: default; }"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined action for launching the private preview.",
+      "html": "<button type=\"button\" class=\"ds-secondary\">Preview in 3D</button>",
+      "css": ".ds-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 10px 16px; border: 1px solid #a99d89; border-radius: 0; background: transparent; color: var(--ink, #2d2921); font: 600 13px/1.55 var(--sans, 'DM Sans', sans-serif); cursor: pointer; } .ds-secondary:hover { background: #eeeadf; } .ds-secondary:focus-visible { outline: 2px solid #69572b; outline-offset: 4px; } .ds-secondary:disabled { opacity: 0.55; cursor: default; }"
+    },
+    {
+      "name": "Exhibition title",
+      "kind": "input",
+      "refersTo": "title-input",
+      "description": "Labeled native field with a paper-toned fill.",
+      "html": "<label class=\"ds-title-field\"><span>Exhibition title</span><input type=\"text\" placeholder=\"Untitled exhibition\" maxlength=\"80\"></label>",
+      "css": ".ds-title-field { display: grid; gap: 6px; width: min(440px, 100%); color: var(--soft, #655d50); font: 400 13px/1.55 var(--sans, 'DM Sans', sans-serif); } .ds-title-field input { min-width: 0; padding: 10px 12px; border: 1px solid #bcb09f; border-radius: 0; background: #faf6ee; color: var(--ink, #2d2921); font: 400 15px/1.55 var(--sans, 'DM Sans', sans-serif); } .ds-title-field input::placeholder { color: #716858; } .ds-title-field input:focus-visible { outline: 2px solid #69572b; outline-offset: 4px; }"
+    },
+    {
+      "name": "Upload area",
+      "kind": "custom",
+      "refersTo": "upload",
+      "description": "Dashed photograph drop target with an underlined file picker action.",
+      "html": "<div class=\"ds-upload\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 5h6m-3-3v6M21 11v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><path d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg><div><strong>Drop your photographs here</strong><span>or <button type=\"button\">choose files</button> from your device</span></div><small>JPG, PNG, WebP, AVIF</small></div>",
+      "css": ".ds-upload { display: flex; align-items: center; gap: 16px; box-sizing: border-box; min-height: 122px; padding: 20px 24px; border: 1px dashed #9f9384; background: #f8f4ec; color: var(--ink, #2d2921); font: 400 15px/1.55 var(--sans, 'DM Sans', sans-serif); } .ds-upload:hover, .ds-upload:focus-within, .ds-upload.ds-dragging { border-color: var(--olive, #545c42); background: #eee9dc; } .ds-upload > svg { flex: none; color: var(--olive, #545c42); } .ds-upload div { display: grid; gap: 3px; } .ds-upload strong { font-weight: 600; } .ds-upload span, .ds-upload small { color: var(--soft, #655d50); font-size: 13px; } .ds-upload small { margin-left: auto; } .ds-upload button { border: 0; background: none; padding: 0; color: var(--olive, #545c42); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; } .ds-upload button:focus-visible { outline: 2px solid #69572b; outline-offset: 4px; } @media (max-width: 490px) { .ds-upload { flex-wrap: wrap; padding: 16px; } .ds-upload small { width: 100%; margin: -4px 0 0 40px; } }"
+    },
+    {
+      "name": "Viewer actions",
+      "kind": "nav",
+      "refersTo": "viewer-actions",
+      "description": "Parchment plate grouping the photograph index and share actions.",
+      "html": "<div class=\"ds-viewer-actions\"><button type=\"button\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 8H3a1 1 0 0 0-1 1v11a2 2 0 0 0 2 2h11a1 1 0 0 0 1-1v-1\"/><rect x=\"6\" y=\"2\" width=\"16\" height=\"16\" rx=\"2\"/><circle cx=\"11\" cy=\"7\" r=\"1\"/><path d=\"m22 13-1.3-1.3a2.5 2.5 0 0 0-3.5 0L11 18\"/></svg> Photos</button><button type=\"button\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8\"/></svg> Copy link</button></div>",
+      "css": ".ds-viewer-actions { display: inline-flex; align-items: center; padding: 0 3px; background: var(--paper, #f6f1e8); border: 1px solid #c3b6a2; color: var(--ink, #2d2921); } .ds-viewer-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 0 12px; border: 0; background: none; color: inherit; white-space: nowrap; font: 600 12px/1.55 var(--sans, 'DM Sans', sans-serif); cursor: pointer; } .ds-viewer-actions button + button { border-left: 1px solid var(--rule, #d7cec0); } .ds-viewer-actions button:hover { background: #eae2d5; } .ds-viewer-actions button:focus-visible { outline: 2px solid #69572b; outline-offset: 4px; } @media (max-width: 790px) { .ds-viewer-actions button { padding: 0 6px; gap: 4px; font-size: 11px; } .ds-viewer-actions svg { width: 14px; } }"
+    },
+    {
+      "name": "Room selection",
+      "kind": "nav",
+      "refersTo": "room-navigation",
+      "description": "Numbered navigation with an olive current location.",
+      "html": "<nav class=\"ds-room-navigation\" aria-label=\"Gallery rooms\"><button type=\"button\" aria-label=\"Go to room 1\" aria-current=\"location\">1</button><button type=\"button\" aria-label=\"Go to room 2\">2</button></nav>",
+      "css": ".ds-room-navigation { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid #c3b6a2; background: var(--paper, #f6f1e8); color: var(--ink, #2d2921); font: 400 12px/1.55 var(--sans, 'DM Sans', sans-serif); } .ds-room-navigation button { min-width: 34px; min-height: 34px; padding: 5px; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; } .ds-room-navigation [aria-current] { background: var(--olive, #545c42); color: white; } .ds-room-navigation button:hover:not([aria-current]) { background: #eae2d5; } .ds-room-navigation button:focus-visible { outline: 2px solid #69572b; outline-offset: 4px; }"
+    },
+    {
+      "name": "Photograph index",
+      "kind": "custom",
+      "refersTo": "photograph-index",
+      "description": "Parchment index with an aligned thumbnail, order number, and photograph title.",
+      "html": "<section class=\"ds-photo-index\"><h2>The photographs</h2><p>Select a photograph for a closer look.</p><button type=\"button\"><span class=\"ds-index-thumbnail\" aria-hidden=\"true\"></span><span class=\"ds-index-number\" aria-hidden=\"true\">01</span><b>Folded sandstone</b></button></section>",
+      "css": ".ds-photo-index { box-sizing: border-box; width: min(435px, 100%); padding: 68px 24px 24px; background: var(--paper, #f6f1e8); color: var(--ink, #2d2921); } .ds-photo-index h2 { margin: 0; font: 400 38px/1 var(--serif, 'Cormorant Garamond', Georgia, serif); } .ds-photo-index p { margin: 11px 0 19px; color: var(--soft, #655d50); font: 400 13px/1.55 var(--sans, 'DM Sans', sans-serif); } .ds-photo-index button { display: grid; grid-template-columns: 54px 22px minmax(0, 1fr); gap: 10px; align-items: center; width: 100%; padding: 10px 0; border: 0; border-top: 1px solid var(--rule, #d7cec0); background: none; color: inherit; text-align: left; font: 400 13px/1.55 var(--sans, 'DM Sans', sans-serif); cursor: pointer; } .ds-photo-index button:hover { background: #e9e3d8; } .ds-photo-index button:focus-visible { outline: 2px solid #69572b; outline-offset: -2px; } .ds-index-thumbnail { display: block; width: 54px; height: 45px; background: var(--rule, #d7cec0); } .ds-index-number { color: var(--soft, #655d50); font-size: 11px; font-variant-numeric: tabular-nums; } .ds-photo-index b { font: inherit; overflow-wrap: anywhere; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A warm contemporary photography museum",
+    "overview": "The visual reference is a warm contemporary photography museum. A timber barrel vault, textured plaster, and staggered travertine paving give the gallery a material presence. Sandstone arches lead between rooms and frame the end niche. Parchment panels borrow the proportions and typography of museum labels.",
+    "keyCharacteristics": [
+      "Make photographs the focal points along the walk. Frame each in a slim dark wood surround with a cream mat and a small label below.",
+      "Let the room occupy the full viewport. Put exhibition information, actions, and movement controls in compact panels around its edges.",
+      "Use Cormorant Garamond for exhibition titles and headings, and DM Sans for instructions, captions, and controls."
+    ]
+  }
+}

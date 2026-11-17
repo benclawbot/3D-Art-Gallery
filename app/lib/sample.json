@@ -1,0 +1,42 @@
+{
+  "id": "demo",
+  "title": "The Shape of Quiet",
+  "photos": [
+    {
+      "url": "/demo/quiet-1.webp",
+      "width": 512,
+      "height": 512,
+      "name": "Folded sandstone"
+    },
+    {
+      "url": "/demo/quiet-3.webp",
+      "width": 512,
+      "height": 512,
+      "name": "Winter face"
+    },
+    {
+      "url": "/demo/quiet-4.webp",
+      "width": 512,
+      "height": 512,
+      "name": "Dark passage"
+    },
+    {
+      "url": "/demo/quiet-5.webp",
+      "width": 512,
+      "height": 512,
+      "name": "The leeward side"
+    },
+    {
+      "url": "/demo/quiet-6.webp",
+      "width": 512,
+      "height": 512,
+      "name": "Shallow water"
+    },
+    {
+      "url": "/demo/quiet-2.webp",
+      "width": 512,
+      "height": 512,
+      "name": "The fog line"
+    }
+  ]
+}
