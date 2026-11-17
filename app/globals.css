@@ -127,12 +127,12 @@ button:disabled { cursor: default; opacity: 0.55; }
 .index-list img { object-fit: cover; }
 .index-list span { color: var(--soft); font-size: 11px; font-variant-numeric: tabular-nums; }
 .index-list b { font: inherit; font-size: 13px; overflow-wrap: anywhere; }
-.photo-dialog { inset: 0; width: 100%; height: 100%; margin: 0; padding: 48px 56px; background: #211d18; color: #f7eee0; }
-.photo-dialog[open] { display: grid; place-items: center; }
+.photo-dialog { inset: 0; width: 100%; height: 100%; margin: 0; padding: 48px 56px; overflow: hidden; background: #211d18; color: #f7eee0; }
+.photo-dialog[open] { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; }
 .photo-dialog::backdrop { background: #211d18; }
 .photo-dialog button:focus-visible { outline-color: #eee6d4; }
-.art-view-inner { min-width: 0; width: min(1100px, 100%); height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; margin: 0; gap: 12px; }
-.art-view-inner img { width: 100%; height: 100%; object-fit: contain; }
+.art-view-inner { min-width: 0; min-height: 0; width: min(1100px, 100%); height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; margin: 0; gap: 12px; }
+.art-view-inner img { display: block; min-height: 0; width: 100%; height: 100%; object-fit: contain; }
 .art-view-inner figcaption { display: flex; justify-content: space-between; gap: 12px; color: #f6ecdd; font-size: 14px; overflow-wrap: anywhere; }
 .art-view-inner figcaption span { color: #dbcdbb; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .art-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; min-height: 52px; display: grid; place-items: center; color: inherit; border: 0; background: #f7eee018; }
