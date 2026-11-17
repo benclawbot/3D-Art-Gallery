@@ -4,8 +4,8 @@ export const SIDE = 4.5;
 export const WALL_HEIGHT = 3.42;
 export const VAULT_HEIGHT = 4.52;
 
-export function vaultHeight(x: number) {
-  return VAULT_HEIGHT - (VAULT_HEIGHT - WALL_HEIGHT) * (x / SIDE) ** 2;
+export function vaultHeight(x: number, span = SIDE * 2) {
+  return VAULT_HEIGHT - (VAULT_HEIGHT - WALL_HEIGHT) * (x / (span / 2)) ** 2;
 }
 
 export function vaultGeometry(
@@ -14,6 +14,7 @@ export function vaultGeometry(
   halfLength: number,
   lowering = 0,
   roundedEnds = false,
+  span = SIDE * 2,
 ) {
   const steps = 64;
   const vertices: number[] = [];
@@ -24,7 +25,7 @@ export function vaultGeometry(
     const radius = width / 2;
     const end = halfLength + (roundedEnds ? Math.sqrt(Math.max(0, radius * radius - x * x)) : 0);
     for (const z of [center - end, center + end]) {
-      vertices.push(x, vaultHeight(x) - lowering, z);
+      vertices.push(x, vaultHeight(x, span) - lowering, z);
       uvs.push(x / 3.2, z / 3.2);
     }
     const a = i * 2;
@@ -38,20 +39,20 @@ export function vaultGeometry(
   return geometry;
 }
 
-function archLine(shape: THREE.Shape, radius: number, spring: number) {
-  shape.lineTo(-radius, spring);
-  shape.absellipse(0, spring, radius, radius * 0.77, Math.PI, 0, true, 0);
-  shape.lineTo(radius, 0);
+function archLine(shape: THREE.Shape, radius: number, spring: number, center = 0) {
+  shape.lineTo(center - radius, spring);
+  shape.absellipse(center, spring, radius, radius * 0.77, Math.PI, 0, true, 0);
+  shape.lineTo(center + radius, 0);
 }
 
-export function partitionGeometry(radius: number, spring: number, depth: number) {
+export function partitionGeometry(radius: number, spring: number, depth: number, span = SIDE * 2, center = 0) {
   const shape = new THREE.Shape();
-  shape.moveTo(-SIDE, 0);
-  shape.lineTo(-radius, 0);
-  archLine(shape, radius, spring);
-  shape.lineTo(SIDE, 0);
-  shape.lineTo(SIDE, VAULT_HEIGHT + 0.08);
-  shape.lineTo(-SIDE, VAULT_HEIGHT + 0.08);
+  shape.moveTo(-span / 2, 0);
+  shape.lineTo(center - radius, 0);
+  archLine(shape, radius, spring, center);
+  shape.lineTo(span / 2, 0);
+  shape.lineTo(span / 2, VAULT_HEIGHT + 0.08);
+  shape.lineTo(-span / 2, VAULT_HEIGHT + 0.08);
   shape.closePath();
   return centeredExtrusion(shape, depth);
 }

@@ -1,24 +1,50 @@
 import * as THREE from "three";
-import { archLiningGeometry, partitionGeometry, seatGeometry, SIDE, VAULT_HEIGHT, WALL_HEIGHT, vaultGeometry, vaultHeight } from "./gallery-architecture";
-import { createGalleryLayout } from "./gallery-layout";
-import { finishTexture } from "./scene-finishes";
+import { archLiningGeometry, partitionGeometry, seatGeometry, VAULT_HEIGHT, vaultGeometry, vaultHeight } from "./gallery-architecture";
+import { createGalleryLayout, type Bounds, type GalleryConnection, type GalleryRoom, type Wall } from "./gallery-layout";
+import { addSkylightShader, addTravertineShader, finishTexture, travertineGeometry } from "./scene-finishes";
 
 export type WorldArtwork = { index: number; url: string; width: number; height: number; name: string };
-export const ROOM_DEPTH = 10;
-const DOOR_HALF_WIDTH = 1.38;
+
+const WALLS: Wall[] = ["west", "east", "north", "south"];
+const WALL_THICKNESS = 0.24;
 const DOOR_SPRING = 2.03;
 const PLAYER_RADIUS = 0.25;
+const seatX = 0.65;
+const seatZ = 0.45;
+const inward = {
+  west: { dx: 1, dz: 0, yaw: Math.PI / 2 },
+  east: { dx: -1, dz: 0, yaw: -Math.PI / 2 },
+  north: { dx: 0, dz: 1, yaw: 0 },
+  south: { dx: 0, dz: -1, yaw: Math.PI },
+};
 
-export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRenderer, refresh: () => void) {
-  const layout = createGalleryLayout(artworks.map(({ width, height }) => width / Math.max(1, height)));
-  const length = layout.roomCount * ROOM_DEPTH;
+function inside(bounds: Bounds, x: number, z: number, insetX = 0, insetZ = insetX) {
+  return x >= bounds.minX + insetX && x <= bounds.maxX - insetX
+    && z >= bounds.minZ + insetZ && z <= bounds.maxZ - insetZ;
+}
+
+function wallFace(room: GalleryRoom, wall: Wall) {
+  const { bounds } = room;
+  const { dx, dz } = inward[wall];
+  return {
+    x: wall === "west" ? bounds.minX : wall === "east" ? bounds.maxX : room.x,
+    z: wall === "north" ? bounds.minZ : wall === "south" ? bounds.maxZ : room.z,
+    span: (dx ? room.depth : room.width) + WALL_THICKNESS * 2,
+    rotation: dx ? Math.PI / 2 : 0,
+    dx, dz,
+  };
+}
+
+export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRenderer, refresh: () => void, minimumRooms: number) {
+  const layout = createGalleryLayout(artworks.map(({ width, height }) => width / Math.max(1, height)), minimumRooms);
+  const { rooms, connections } = layout;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#cabdae");
-  scene.fog = new THREE.Fog("#cabdae", 28, 62);
+  scene.fog = new THREE.Fog("#cabdae", 31, 68);
   scene.add(new THREE.HemisphereLight("#fffaf3", "#b8a692", 1.65));
-  const daylight = new THREE.DirectionalLight("#fff5e9", 1.28);
+  const daylight = new THREE.DirectionalLight("#fff6ec", 1.21);
   daylight.position.set(-4, 8, -5);
-  const bounce = new THREE.DirectionalLight("#ffecd4", 0.65);
+  const bounce = new THREE.DirectionalLight("#ffecd4", 0.62);
   bounce.position.set(1, -8, 3);
   scene.add(daylight, bounce);
 
@@ -28,19 +54,44 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
   const plaster = new THREE.MeshStandardMaterial({ color: "#d9cbb9", map: plasterTexture, roughness: 0.96 });
   const lime = new THREE.MeshStandardMaterial({ color: "#e8dac8", map: plasterTexture, roughness: 0.95 });
   const sandstone = new THREE.MeshStandardMaterial({ color: "#c8ad90", map: stoneTexture, bumpMap: stoneTexture, bumpScale: 0.04, roughness: 0.9 });
-  const floor = new THREE.MeshStandardMaterial({ color: "#c6b6a0", map: stoneTexture, bumpMap: stoneTexture, bumpScale: 0.075, roughness: 0.68 });
-  const seam = new THREE.MeshStandardMaterial({ color: "#998673", roughness: 1 });
+  const floor = new THREE.MeshStandardMaterial({ color: "#c6b6a0", map: stoneTexture, bumpMap: stoneTexture, bumpScale: 0.05, roughness: 0.68 });
+  const seatFloor = floor.clone();
+  const turnedSeatFloor = floor.clone();
+  addTravertineShader(floor);
+  addTravertineShader(seatFloor, [seatX, seatZ]);
+  addTravertineShader(turnedSeatFloor, [seatX, seatZ], true);
   const ceiling = new THREE.MeshStandardMaterial({ color: "#c79c70", map: woodTexture, bumpMap: woodTexture, bumpScale: 0.027, roughness: 0.89 });
   const trim = new THREE.MeshStandardMaterial({ color: "#635342", roughness: 0.82 });
   const frame = new THREE.MeshStandardMaterial({ color: "#463326", roughness: 0.72 });
   const mat = new THREE.MeshStandardMaterial({ color: "#f7f0e1", roughness: 0.9 });
   const oak = new THREE.MeshStandardMaterial({ color: "#a77550", map: woodTexture, roughness: 0.75 });
   const fixture = new THREE.MeshStandardMaterial({ color: "#5b5246", roughness: 0.65 });
+  const diffuserRadius = 1.22;
+  const diffuserHalfLength = 2.0;
   const luminous = new THREE.MeshBasicMaterial({ color: "#fff5e2", toneMapped: false });
+  addSkylightShader(luminous, diffuserRadius, diffuserHalfLength);
+  const passageLight = new THREE.MeshBasicMaterial({ color: "#fff5e2", toneMapped: false });
   const shadow = createShadow();
   const group = new THREE.Group();
   scene.add(group);
-  const box = (w: number, h: number, d: number, x: number, y: number, z: number, material: THREE.Material) => {
+  const occluders: THREE.Mesh[] = [];
+  const doors = rooms.map(() => new Map<Wall, GalleryConnection>());
+  const neighbors = rooms.map(() => [] as number[]);
+  for (const edge of connections) {
+    doors[edge.from].set(edge.fromWall, edge);
+    doors[edge.to].set(edge.toWall, edge);
+    neighbors[edge.from].push(edge.to);
+    neighbors[edge.to].push(edge.from);
+  }
+
+  function add(geometry: THREE.BufferGeometry, material: THREE.Material, x = 0, y = 0, z = 0) {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+    return mesh;
+  }
+
+  function box(w: number, h: number, d: number, x: number, y: number, z: number, material: THREE.Material) {
     const geometry = new THREE.BoxGeometry(w, h, d);
     const vertex = geometry.attributes.position;
     const normal = geometry.attributes.normal;
@@ -50,126 +101,156 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
       const up = Math.abs(normal.getY(i)) > 0.5 ? vertex.getZ(i) + z : vertex.getY(i) + y;
       uv.setXY(i, across / 3.2, up / 3.2);
     }
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y, z);
-    group.add(mesh);
-    return mesh;
-  };
-  function add(geometry: THREE.BufferGeometry, material: THREE.Material, z = 0) {
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = z;
-    group.add(mesh);
-    return mesh;
+    return add(geometry, material, x, y, z);
   }
 
-  box(9.2, 0.12, length + 0.24, 0, -0.06, length / 2, floor);
-  add(vaultGeometry(SIDE * 2, length / 2, length / 2 + 0.08), ceiling);
-  for (const side of [-1, 1]) {
-    box(0.24, WALL_HEIGHT + 0.02, length, side * (SIDE + 0.12), WALL_HEIGHT / 2, length / 2, side < 0 ? lime : plaster);
-    box(0.025, 0.039, length, side * (SIDE - 0.011), 0.022, length / 2, trim);
-    box(0.06, 0.062, length, side * (SIDE - 0.02), WALL_HEIGHT - 0.025, length / 2, trim);
-  }
-  for (let z = 1.25; z < length; z += 1.25) {
-    box(9, 0.002, 0.012, 0, 0, z, seam);
-    const stagger = Math.round(z / 1.25) % 2 ? 0 : 0.9;
-    for (let x = -3.6 + stagger; x < SIDE; x += 1.8) box(0.012, 0.002, 1.25, x, 0, z - 0.625, seam);
-  }
-  box(9.2, VAULT_HEIGHT, 0.24, 0, VAULT_HEIGHT / 2, -0.12, plaster);
-  box(9.2, VAULT_HEIGHT, 0.24, 0, VAULT_HEIGHT / 2, length + 0.12, lime);
-  add(partitionGeometry(2.04, 1.92, 0.14), plaster, length - 0.21);
-  add(archLiningGeometry(2.04, 1.92, 0.19), sandstone, length - 0.21);
-  for (let room = 0; room < layout.roomCount; room++) {
-    const z = room * ROOM_DEPTH;
-    if (room > 0) {
-      add(partitionGeometry(DOOR_HALF_WIDTH, DOOR_SPRING, 0.48), plaster, z);
-      add(archLiningGeometry(DOOR_HALF_WIDTH, DOOR_SPRING, 0.54), sandstone, z);
-      box(DOOR_HALF_WIDTH * 2, 0.005, 0.56, 0, 0.0025, z, seam);
+  const featureInRoom = rooms.map(({ index }) => layout.artworks.find((art) => art.room === index && art.feature));
+  const turnedSeats = featureInRoom.map((feature) => feature?.wall === "east" || feature?.wall === "west");
+  for (const room of rooms) {
+    const { index, x, z, width, depth } = room;
+    const feature = featureInRoom[index];
+    const nicheWall = rooms.length === 1 || index === 0 || index === rooms.length - 1 ? feature?.wall : undefined;
+    const hasSeat = index % 2 === 0;
+    const turnedSeat = turnedSeats[index];
+    const paving = hasSeat ? turnedSeat ? turnedSeatFloor : seatFloor : floor;
+    add(travertineGeometry(width, depth), paving, x, 0, z);
+    add(vaultGeometry(width, 0, depth / 2 + 0.02, 0, false, width), ceiling, x, 0, z);
+
+    for (const wall of WALLS) {
+      const side = wallFace(room, wall);
+      const wallX = side.x - side.dx * WALL_THICKNESS / 2;
+      const wallZ = side.z - side.dz * WALL_THICKNESS / 2;
+      const edge = doors[index].get(wall);
+      const color = wall === "north" || wall === "west" ? lime : plaster;
+      if (edge) {
+        const corridor = edge.bounds;
+        const center = side.dx ? room.z - (corridor.minZ + corridor.maxZ) / 2 : (corridor.minX + corridor.maxX) / 2 - room.x;
+        const radius = side.dx ? (corridor.maxZ - corridor.minZ) / 2 : (corridor.maxX - corridor.minX) / 2;
+        const structure = add(partitionGeometry(radius, DOOR_SPRING, WALL_THICKNESS, side.span, center), color, wallX, 0, wallZ);
+        structure.rotation.y = side.rotation;
+        occluders.push(structure);
+        const border = add(archLiningGeometry(radius, DOOR_SPRING, 0.30), sandstone,
+          wallX + (side.dx ? 0 : center), 0, wallZ - (side.dx ? center : 0));
+        border.rotation.y = side.rotation;
+      } else {
+        const structure = box(side.dx ? WALL_THICKNESS : side.span, VAULT_HEIGHT, side.dx ? side.span : WALL_THICKNESS,
+          wallX, VAULT_HEIGHT / 2, wallZ, color);
+        occluders.push(structure);
+        if (wall === nicheWall && feature) {
+          const center = side.dx ? room.z - feature.z : feature.x - room.x;
+          const radius = Math.max(1.48, feature.width / 2 + 0.37);
+          const spring = 1.96;
+          const nicheX = side.x + side.dx * 0.21;
+          const nicheZ = side.z + side.dz * 0.21;
+          const surround = add(partitionGeometry(radius, spring, 0.13, side.span, center), plaster, nicheX, 0, nicheZ);
+          surround.rotation.y = side.rotation;
+          occluders.push(surround);
+          const casing = add(archLiningGeometry(radius, spring, 0.17), sandstone,
+            nicheX + (side.dx ? 0 : center), 0, nicheZ - (side.dx ? center : 0));
+          casing.rotation.y = side.rotation;
+        } else {
+          box(side.dx ? 0.023 : side.span - WALL_THICKNESS, 0.038,
+            side.dx ? side.span - WALL_THICKNESS : 0.023, side.x + side.dx * 0.011, 0.021, side.z + side.dz * 0.011, trim);
+        }
+      }
     }
 
-    add(vaultGeometry(2.76, z + 5, 2.22, 0.021, true), fixture);
-    add(vaultGeometry(2.58, z + 5, 2.22, 0.032, true), luminous);
+    const skylight = diffuserRadius * 2;
+    add(vaultGeometry(skylight + 0.23, 0, diffuserHalfLength, 0.015, true, width), sandstone, x, 0, z);
+    add(vaultGeometry(skylight + 0.12, 0, diffuserHalfLength, 0.028, true, width), fixture, x, 0, z);
+    add(vaultGeometry(skylight, 0, diffuserHalfLength, 0.044, true, width), luminous, x, 0, z);
     for (const side of [-1, 1]) {
-      const track = side * 3.36;
-      const height = vaultHeight(track);
-      box(0.035, 0.027, 6.45, track, height - 0.024, z + 5, fixture);
-      for (const offset of [2.6, 5, 7.4]) {
-        const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.074, 0.18, 16), fixture);
+      const track = side * (width / 2 - 1.08);
+      const height = vaultHeight(track, width);
+      box(0.035, 0.027, depth * 0.68, x + track, height - 0.024, z, fixture);
+      for (const offset of [-0.25, 0, 0.25]) {
+        const lamp = add(new THREE.CylinderGeometry(0.055, 0.074, 0.18, 16), fixture, x + track, height - 0.134, z + depth * offset);
         lamp.rotation.z = side * 0.48;
-        lamp.position.set(track, height - 0.134, z + offset);
-        group.add(lamp);
       }
     }
-    if (room % 2 === 0) {
-      const benchZ = z + 5.3;
-      add(seatGeometry(), oak, benchZ).position.set(0.65, 0.40, benchZ);
-      for (const x of [-0.02, 1.32]) {
-        add(new THREE.CylinderGeometry(0.14, 0.19, 0.40, 28), sandstone, benchZ).position.set(x, 0.20, benchZ);
+    if (hasSeat) {
+      add(seatGeometry(), oak, x + seatX, 0.40, z + seatZ).rotation.y = turnedSeat ? Math.PI / 2 : 0;
+      for (const side of [-1, 1]) {
+        const offset = side * 0.67;
+        add(new THREE.CylinderGeometry(0.14, 0.19, 0.40, 28), sandstone,
+          x + seatX + (turnedSeat ? 0 : offset), 0.20, z + seatZ + (turnedSeat ? offset : 0));
       }
-      const benchShadow = new THREE.Mesh(new THREE.PlaneGeometry(2.15, 0.94), shadow);
-      benchShadow.rotation.x = -Math.PI / 2;
-      benchShadow.position.set(0.65, 0.003, benchZ);
-      group.add(benchShadow);
     }
   }
 
-  // A small fixed pool of lights follows the occupied rooms without increasing
-  // the number of lights the GPU must evaluate for a fifty-photo exhibition.
-  const washes = [-1, 1, -1, 1].map((side) => {
-    const light = new THREE.SpotLight("#fff1d5", 47, 9, 0.84, 0.85, 1.5);
-    scene.add(light, light.target);
-    return { light, side };
-  });
-  const lightRoom = (room: number) => {
-    const nearby = room + (room + 1 < layout.roomCount ? 1 : -1);
-    for (const [i, { light, side }] of washes.entries()) {
-      const index = i < 2 ? room : nearby;
-      light.intensity = index < 0 ? 0 : 48;
-      light.position.set(side * 3.36, vaultHeight(3.36) - 0.18, index * ROOM_DEPTH + 5);
-      light.target.position.set(side * SIDE, 1.35, index * ROOM_DEPTH + 5);
+  for (const { bounds, fromWall } of connections) {
+    const width = bounds.maxX - bounds.minX;
+    const depth = bounds.maxZ - bounds.minZ;
+    const x = (bounds.minX + bounds.maxX) / 2;
+    const z = (bounds.minZ + bounds.maxZ) / 2;
+    const runsX = fromWall === "east" || fromWall === "west";
+    add(travertineGeometry(width, depth), floor, x, 0, z);
+    const passageHeight = 3.22;
+    box(width + 0.15, 0.10, depth + 0.15, x, passageHeight + 0.05, z, lime);
+    for (const side of [-1, 1]) {
+      const wallX = x + (runsX ? 0 : side * (width / 2 + WALL_THICKNESS / 2));
+      const wallZ = z + (runsX ? side * (depth / 2 + WALL_THICKNESS / 2) : 0);
+      const wall = box(runsX ? width : WALL_THICKNESS, passageHeight, runsX ? WALL_THICKNESS : depth,
+        wallX, passageHeight / 2, wallZ, plaster);
+      occluders.push(wall);
     }
-  };
-  const endLight = new THREE.SpotLight("#ffedcd", 30, 8, 0.55, 0.74, 1.6);
-  endLight.position.set(0, VAULT_HEIGHT - 0.20, length - 1.58);
-  endLight.target.position.set(0, 1.72, length);
-  scene.add(endLight, endLight.target);
-  const endLamp = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.072, 0.17, 12), fixture);
-  endLamp.rotation.x = -0.48;
-  endLamp.position.copy(endLight.position);
-  group.add(endLamp);
+    box(runsX ? 0.94 : 0.13, 0.018, runsX ? 0.13 : 0.94, x, passageHeight - 0.015, z, passageLight);
+  }
+
+  // Reuse two sets of lights for the current room and a nearby doorway.
+  const lightBanks = Array.from({ length: 2 }, () => (
+    [48, 48, 31].map((power) => {
+      const light = new THREE.SpotLight("#fff1d9", power, 9, 0.74, 0.86, 1.5);
+      scene.add(light, light.target);
+      return { light, power };
+    })
+  ));
+  function lightRoom(index: number) {
+    const visible = [index, neighbors[index][0]];
+    lightBanks.forEach((bank, i) => {
+      const room = rooms[visible[i]];
+      bank.forEach(({ light, power }, lightIndex) => {
+        light.intensity = room ? power : 0;
+        if (!room) return;
+        const art = featureInRoom[room.index];
+        if (lightIndex === 2 && art) {
+          const { dx, dz } = inward[art.wall];
+          light.position.set(art.x + dx * 1.94, 4.02, art.z + dz * 1.94);
+          light.target.position.set(art.x, 1.7, art.z);
+        } else {
+          const side = lightIndex === 0 ? -1 : 1;
+          const track = side * (room.width / 2 - 1.08);
+          light.position.set(room.x + track, vaultHeight(track, room.width) - 0.18, room.z);
+          light.target.position.set(room.x + side * room.width / 2, 1.35, room.z);
+        }
+      });
+    });
+  }
 
   const clickable: THREE.Mesh[] = [];
   const pending: { material: THREE.MeshBasicMaterial; art: WorldArtwork; room: number }[] = [];
   for (const art of layout.artworks) {
     const item = artworks[art.index];
-    const end = art.side === "end";
-    const direction = art.side === "left" ? 1 : -1;
-    const x = end ? 0 : direction * -SIDE;
+    const { dx, dz, yaw } = inward[art.wall];
     const y = 1.72;
-    const rotation = end ? Math.PI : direction * Math.PI / 2;
-    const position = (mesh: THREE.Mesh, offset: number, height = y, z = art.z) => {
-      mesh.position.set(end ? x : x + direction * offset, height, end ? z - offset : z);
-      mesh.rotation.y = rotation;
-      group.add(mesh);
+    const position = (mesh: THREE.Mesh, offset: number, height = y) => {
+      mesh.position.set(art.x + dx * offset, height, art.z + dz * offset);
+      mesh.rotation.y = yaw;
+      return mesh;
     };
 
-    position(new THREE.Mesh(new THREE.PlaneGeometry(art.width + 0.40, art.height + 0.37), shadow), 0.003, y - 0.04);
-    if (end) {
-      box(art.width + 0.16, art.height + 0.16, 0.065, x, y, art.z - 0.046, frame);
-      box(art.width + 0.105, art.height + 0.105, 0.02, x, y, art.z - 0.082, mat);
-    } else {
-      box(0.065, art.height + 0.16, art.width + 0.16, x + direction * 0.046, y, art.z, frame);
-      box(0.02, art.height + 0.105, art.width + 0.105, x + direction * 0.082, y, art.z, mat);
-    }
+    position(add(new THREE.PlaneGeometry(art.width + 0.40, art.height + 0.37), shadow), 0.003, y - 0.04);
+    position(add(new THREE.BoxGeometry(art.width + 0.16, art.height + 0.16, 0.065), frame), 0.046);
+    position(add(new THREE.BoxGeometry(art.width + 0.105, art.height + 0.105, 0.02), mat), 0.082);
     const material = new THREE.MeshBasicMaterial({ color: "#b7aa98", toneMapped: false });
-    const image = new THREE.Mesh(new THREE.PlaneGeometry(art.width, art.height), material);
+    const image = position(add(new THREE.PlaneGeometry(art.width, art.height), material), 0.095);
     image.userData.artworkIndex = art.index;
-    position(image, 0.095);
     clickable.push(image);
     pending.push({ material, art: item, room: art.room });
     const labelTexture = makeLabel(item.name, art.index);
     if (labelTexture) {
-      const label = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.14), new THREE.MeshBasicMaterial({ map: labelTexture, toneMapped: false }));
-      position(label, 0.012, y - art.height / 2 - 0.18);
+      position(add(new THREE.PlaneGeometry(0.56, 0.14), new THREE.MeshBasicMaterial({ map: labelTexture, toneMapped: false })),
+        0.012, y - art.height / 2 - 0.18);
     }
   }
 
@@ -185,8 +266,8 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
   function fillTextureQueue() {
     if (disposed) return;
     const candidates = pending
-      .filter(({ art, room }) => !tried.has(art.index) && Math.abs(room - activeRoom) <= 1)
-      .sort((a, b) => Math.abs(a.room - activeRoom) - Math.abs(b.room - activeRoom));
+      .filter(({ art, room }) => !tried.has(art.index) && (room === activeRoom || neighbors[activeRoom].includes(room)))
+      .sort((a, b) => Number(b.room === activeRoom) - Number(a.room === activeRoom));
     for (const { material, art } of candidates.slice(0, 4 - running)) {
       tried.add(art.index);
       running++;
@@ -215,14 +296,21 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
     }
   }
 
+  function roomAt(x: number, z: number) {
+    return rooms.find(({ bounds }) => inside(bounds, x, z))?.index;
+  }
   function blocked(x: number, z: number) {
-    if (Math.abs(x) > SIDE - PLAYER_RADIUS || z < PLAYER_RADIUS || z > length - PLAYER_RADIUS) return true;
-    const threshold = Math.round(z / ROOM_DEPTH) * ROOM_DEPTH;
-    if (threshold > 0 && threshold < length && Math.abs(z - threshold) < 0.25 + PLAYER_RADIUS
-      && Math.abs(x) > DOOR_HALF_WIDTH - PLAYER_RADIUS) return true;
-    const room = Math.floor(z / ROOM_DEPTH);
-    return room % 2 === 0 && Math.abs(z - room * ROOM_DEPTH - 5.3) < 0.34 + PLAYER_RADIUS
-      && Math.abs(x - 0.65) < 1.03 + PLAYER_RADIUS;
+    const room = rooms.find(({ bounds }) => inside(bounds, x, z, PLAYER_RADIUS));
+    if (room) {
+      const seat = room.index % 2 === 0;
+      const turned = turnedSeats[room.index];
+      return seat && Math.abs(x - room.x - seatX) < (turned ? 0.34 : 1.03) + PLAYER_RADIUS
+        && Math.abs(z - room.z - seatZ) < (turned ? 1.03 : 0.34) + PLAYER_RADIUS;
+    }
+    return !connections.some(({ bounds, fromWall }) => {
+      const acrossX = fromWall === "east" || fromWall === "west";
+      return inside(bounds, x, z, acrossX ? -PLAYER_RADIUS : PLAYER_RADIUS, acrossX ? PLAYER_RADIUS : -PLAYER_RADIUS);
+    });
   }
   function dispose() {
     disposed = true;
@@ -238,7 +326,7 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
     for (const material of materials) material.dispose();
     for (const texture of textures) texture.dispose();
   }
-  return { scene, clickable, blocked, dispose, loadNearby, roomCount: layout.roomCount };
+  return { scene, clickable, occluders, blocked, dispose, loadNearby, roomAt, rooms };
 }
 
 function createShadow() {

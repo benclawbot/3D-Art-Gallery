@@ -129,11 +129,11 @@ Viewer controls sit at the top corners above the full-viewport scene. On wide sc
 
 ## Elevation & Depth
 
-The interface uses flat surfaces, visible hairline rules, and tonal changes for hover. Each room has a warm, rounded skylight that follows the vault, flanked by slim tracks and directional wall washes. Soft shadows under benches and behind picture frames establish contact with the stone and plaster. The index adds a translucent warm-black scrim, while the full-screen photograph view uses a solid charcoal-brown backdrop.
+The interface uses flat surfaces, visible hairline rules, and tonal changes for hover. Each room has a warm, rounded skylight with a shaded diffuser and recessed rim. Slim tracks and directional wall washes light the artwork. Slab-specific grain and soft contact shadows under benches give the paving depth. The index adds a translucent warm-black scrim, while the full-screen photograph view uses a solid charcoal-brown backdrop.
 
 ## Shapes
 
-The barrel vault, skylights, arched thresholds, end niche, and rounded oak seats repeat curved forms through the room. Picture frames and interface plates are square-cornered. Thin rules divide segments and rows. The upload area uses a dashed outline to indicate its drop target.
+The barrel vault, skylights, arched thresholds, focal niches, and rounded oak seats repeat curved forms through the exhibition. Connected passages turn through varied room footprints, with doorway positions set by the floor plan. Picture frames and interface plates are square-cornered. Thin rules divide segments and rows. The upload area uses a dashed outline to indicate its drop target.
 
 ## Components
 

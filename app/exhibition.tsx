@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronLeft, ChevronRight, Images, Link2, X } from "lucide-react";
+import Link from "next/link";
 import { type Exhibition } from "./lib/exhibition";
 import { createGalleryLayout } from "./lib/gallery-layout";
 import GalleryWorld from "./world";
@@ -26,8 +27,9 @@ export default function ExhibitionView({ gallery, onExit }: { gallery: Exhibitio
   const heldSince = useRef(0);
   const photos = gallery.photos;
   const artworks = useMemo(() => photos.map((photo, index) => ({ ...photo, index })), [photos]);
-  const layout = useMemo(() => createGalleryLayout(photos.map(({ width, height }) => width / height)), [photos]);
   const sample = gallery.id === "demo";
+  const minimumRooms = sample ? 3 : 1;
+  const layout = useMemo(() => createGalleryLayout(photos.map(({ width, height }) => width / height), minimumRooms), [photos, minimumRooms]);
   const shareable = !onExit;
 
   useEffect(() => {
@@ -65,13 +67,13 @@ export default function ExhibitionView({ gallery, onExit }: { gallery: Exhibitio
 
   return (
     <main className="gallery-screen">
-      <GalleryWorld artworks={artworks} onArtwork={inspect} room={room} onRoom={setRoom}
+      <GalleryWorld artworks={artworks} onArtwork={inspect} room={room} onRoom={setRoom} minimumRooms={minimumRooms}
         paused={Boolean(panel)} onFallback={() => { setFallback(true); setPanel("index"); }} />
       <header className="viewer-top">
         <div className="viewer-brand">
           {onExit
             ? <button type="button" className="back-button" onClick={onExit} aria-label="Back to your photographs"><ArrowLeft size={18} /></button>
-            : <a href="/" aria-label="Stillroom home" className="wordmark">stillroom<span>.</span></a>}
+            : <Link href="/" aria-label="Stillroom home" className="wordmark">stillroom<span>.</span></Link>}
           <div className="exhibition-header">
             <h1 className="viewer-title">{gallery.title}</h1>
             {sample && <span className="sample-label">Sample exhibition</span>}

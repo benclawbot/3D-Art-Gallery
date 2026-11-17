@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { createScene, ROOM_DEPTH, type WorldArtwork } from "./lib/gallery-scene";
+import { createScene, type WorldArtwork } from "./lib/gallery-scene";
 
 export type { WorldArtwork };
 
@@ -14,11 +14,12 @@ type Props = {
   paused?: boolean;
   preview?: boolean;
   onFallback?: () => void;
+  minimumRooms?: number;
 };
 
 const movementKeys = new Set(["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"]);
 
-export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, paused = false, preview = false, onFallback }: Props) {
+export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, paused = false, preview = false, onFallback, minimumRooms = 1 }: Props) {
   const mount = useRef<HTMLDivElement>(null);
   const controller = useRef<{ jump: (room: number) => void } | null>(null);
   const callbacks = useRef({ paused, onArtwork, onRoom, onFallback });
@@ -43,10 +44,10 @@ export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, pa
     host.appendChild(canvas);
     let redraw = true;
     const refresh = () => { redraw = true; };
-    const { scene, clickable, blocked, dispose, loadNearby, roomCount } = createScene(artworks, renderer, refresh);
+    const { scene, clickable, occluders, blocked, dispose, loadNearby, roomAt, rooms } = createScene(artworks, renderer, refresh, minimumRooms);
     const camera = new THREE.PerspectiveCamera(63, 1, 0.06, 75);
     const portrait = host.clientWidth < host.clientHeight * 0.72;
-    let yaw = Math.PI + (portrait ? 0.075 : 0.25);
+    let yaw = 0;
     let pitch = -0.035;
     let currentRoom = 0;
     let animation = 0;
@@ -57,15 +58,19 @@ export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, pa
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
 
-    camera.position.set(preview ? -1.15 : -0.7, preview ? 1.81 : 1.63, 0.72);
+    function faceRoom(index: number, angle = 0) {
+      const spawn = rooms[index].spawn;
+      camera.position.set(spawn.x, preview ? 1.77 : 1.63, spawn.z);
+      yaw = spawn.yaw + angle;
+      pitch = -0.035;
+    }
+    faceRoom(0, portrait ? 0 : -0.11);
     loadNearby(0);
 
     controller.current = {
       jump(nextRoom) {
-        if (nextRoom === currentRoom || nextRoom < 0 || nextRoom >= roomCount) return;
-        camera.position.set(0, 1.63, nextRoom * ROOM_DEPTH + 0.78);
-        yaw = Math.PI;
-        pitch = 0;
+        if (nextRoom === currentRoom || nextRoom < 0 || nextRoom >= rooms.length) return;
+        faceRoom(nextRoom);
         currentRoom = nextRoom;
         loadNearby(currentRoom);
         refresh();
@@ -111,7 +116,7 @@ export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, pa
       drag.x = event.clientX;
       drag.y = event.clientY;
       if (drag.distance <= 4) return;
-      yaw -= dx * 0.004;
+      yaw += dx * 0.004;
       pitch = THREE.MathUtils.clamp(pitch - dy * 0.0035, -0.72, 0.72);
       refresh();
     }
@@ -125,13 +130,8 @@ export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, pa
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(clickable)[0];
       if (!hit) return;
-      const offset = hit.point.clone().sub(camera.position);
-      for (let z = ROOM_DEPTH; z < roomCount * ROOM_DEPTH; z += ROOM_DEPTH) {
-        if ((camera.position.z - z) * (hit.point.z - z) < 0) {
-          const x = camera.position.x + offset.x * (z - camera.position.z) / offset.z;
-          if (blocked(x, z)) return;
-        }
-      }
+      const wall = raycaster.intersectObjects(occluders)[0];
+      if (wall && wall.distance < hit.distance) return;
       callbacks.current.onArtwork?.(hit.object.userData.artworkIndex);
     }
 
@@ -173,8 +173,8 @@ export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, pa
       const strafe = Number(keys.has("d") || keys.has("arrowright")) - Number(keys.has("a") || keys.has("arrowleft"));
       walk(strafe + held[0], forward + held[1], dt * 2.55);
       camera.rotation.set(pitch, yaw, 0, "YXZ");
-      const enteredRoom = Math.floor(camera.position.z / ROOM_DEPTH);
-      if (enteredRoom !== currentRoom) {
+      const enteredRoom = roomAt(camera.position.x, camera.position.z);
+      if (enteredRoom !== undefined && enteredRoom !== currentRoom) {
         currentRoom = enteredRoom;
         loadNearby(enteredRoom);
         callbacks.current.onRoom?.(enteredRoom);
@@ -197,7 +197,7 @@ export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, pa
       renderer.forceContextLoss();
       canvas.remove();
     };
-  }, [artworks, preview]);
+  }, [artworks, preview, minimumRooms]);
 
   useEffect(() => { controller.current?.jump(room); }, [room]);
   return <div className={preview ? "world world-preview" : "world"} ref={mount}

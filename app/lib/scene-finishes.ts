@@ -74,3 +74,107 @@ export function finishTexture(surface: Surface, renderer: THREE.WebGLRenderer) {
   texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   return texture;
 }
+
+/**
+ * Four vertices per stone slab share their own grain origin and brightness.
+ * Keep the surface a single mesh per room or passage.
+ */
+export function travertineGeometry(width: number, depth: number) {
+  const vertices: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const slabs: number[] = [];
+  const indices: number[] = [];
+  const tileWidth = 1.8;
+  const tileDepth = 1.25;
+
+  for (let row = 0; row * tileDepth < depth; row++) {
+    const z0 = row * tileDepth;
+    const z1 = Math.min(depth, z0 + tileDepth);
+    const stagger = (row % 2) * (tileWidth / 2);
+    for (let col = 0; col * tileWidth - stagger < width; col++) {
+      const origin = col * tileWidth - stagger;
+      const x0 = Math.max(0, origin);
+      const x1 = Math.min(width, origin + tileWidth);
+      const tone = lattice(col + 113, row + Math.round(width * 47));
+      const offsetV = lattice(col + 11, row + 291);
+      const flip = tone < 0 ? -1 : 1;
+      const first = vertices.length / 3;
+      for (const [x, z] of [[x0, z0], [x0, z1], [x1, z0], [x1, z1]]) {
+        const u = (x - origin) / tileWidth;
+        const v = (z - z0) / tileDepth;
+        vertices.push(x - width / 2, 0, z - depth / 2);
+        normals.push(0, 1, 0);
+        uvs.push(tone + flip * u * 0.58, offsetV + v * 0.4);
+        slabs.push(u, v, tone + 0.5);
+      }
+      indices.push(first, first + 1, first + 2, first + 2, first + 1, first + 3);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setAttribute("slabInfo", new THREE.Float32BufferAttribute(slabs, 3));
+  geometry.setIndex(indices);
+  return geometry;
+}
+
+/** Lightly occlude the stone joints and soften the contact shadows under the bench. */
+export function addTravertineShader(material: THREE.MeshStandardMaterial, seat?: [number, number], turnSeat = false) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.stillroomSeat = { value: new THREE.Vector2(...(seat ?? [0, 0])) };
+    shader.uniforms.stillroomSeatAmount = { value: seat ? 1 : 0 };
+    shader.uniforms.stillroomSeatTurn = { value: turnSeat ? 1 : 0 };
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `#include <common>
+attribute vec3 slabInfo;
+varying vec3 vStillroomSlab;
+varying vec2 vStillroomFloor;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+vStillroomSlab = slabInfo;
+vStillroomFloor = position.xz;`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>
+varying vec3 vStillroomSlab;
+varying vec2 vStillroomFloor;
+uniform vec2 stillroomSeat;
+uniform float stillroomSeatAmount;
+uniform float stillroomSeatTurn;
+
+float stillroomGroundShadow(vec2 offset, vec2 spread) {
+  vec2 radius = offset / spread;
+  return exp(-dot(radius, radius));
+}`)
+      .replace("#include <map_fragment>", `#include <map_fragment>
+vec2 stillroomEdge = min(vStillroomSlab.xy, vec2(1.0) - vStillroomSlab.xy);
+float stillroomGrout = smoothstep(0.002, 0.013, min(stillroomEdge.x, stillroomEdge.y));
+vec2 stillroomSeatOffset = vStillroomFloor - stillroomSeat;
+stillroomSeatOffset = mix(stillroomSeatOffset, stillroomSeatOffset.yx, stillroomSeatTurn);
+float stillroomShadow = 0.17 * stillroomGroundShadow(stillroomSeatOffset + vec2(0.07, 0.11), vec2(0.92, 0.44));
+stillroomShadow += 0.30 * stillroomGroundShadow(vec2(abs(stillroomSeatOffset.x) - 0.67, stillroomSeatOffset.y), vec2(0.19, 0.21));
+diffuseColor.rgb *= mix(0.67, 1.0, stillroomGrout) * mix(0.93, 1.05, vStillroomSlab.z)
+  * (1.0 - stillroomShadow * stillroomSeatAmount);`);
+  };
+  material.customProgramCacheKey = () => "stillroom-travertine-v2";
+}
+
+/** Shade the diffuser in its own coordinates, so the same light works in every room. */
+export function addSkylightShader(material: THREE.MeshBasicMaterial, radius: number, straightHalfLength: number) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.stillroomDiffuser = { value: new THREE.Vector2(radius, straightHalfLength) };
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec2 vStillroomDiffuser;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvStillroomDiffuser = position.xz;");
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nvarying vec2 vStillroomDiffuser;\nuniform vec2 stillroomDiffuser;")
+      .replace("#include <color_fragment>", `#include <color_fragment>
+float stillroomCap = max(0.0, abs(vStillroomDiffuser.y) - stillroomDiffuser.y);
+float stillroomEdge = length(vec2(vStillroomDiffuser.x, stillroomCap)) / stillroomDiffuser.x;
+float stillroomFalloff = smoothstep(0.47, 1.0, stillroomEdge);
+float stillroomFall = smoothstep(-2.8, 3.2, vStillroomDiffuser.y);
+diffuseColor.rgb *= mix(vec3(1.03, 1.04, 1.055), vec3(0.72, 0.67, 0.60), stillroomFalloff)
+  * mix(0.94, 1.02, stillroomFall);`);
+  };
+  material.customProgramCacheKey = () => "stillroom-skylight-v2";
+}
