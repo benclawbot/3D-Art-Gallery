@@ -14,15 +14,15 @@ Choose JPG, PNG, WebP, or AVIF files. Add a title and reorder the photographs be
 
 ### Courtyard entrance
 
-Bronze glazing looks onto an olive courtyard. Daylight throws the tree and window-frame shadows across the limestone floor beside a low stone bench. The sample exhibition, *The Shape of Quiet*, hangs six generated photographs across three rooms.
+Bronze glazing looks onto an olive courtyard. Daylight throws the tree and window-frame shadows across the warm oak floor beside a low limestone bench. The sample exhibition, *The Shape of Quiet*, hangs six generated photographs across three rooms.
 
-![Sunlit Stillroom entrance with an olive courtyard, a limestone bench, and two framed photographs](docs/screenshots/gallery.jpg)
+![Sunlit Stillroom entrance with an olive courtyard, oak flooring, a limestone bench, and two framed photographs](docs/screenshots/gallery.jpg)
 
 ### Print wing
 
-The last room of a multiroom exhibition pairs a flat timber ceiling with graphite paving, warm spotlights, and a low wooden bench beneath the featured print.
+The last room of a multiroom exhibition pairs a flat timber ceiling with smoked oak boards, warm spotlights, and a low wooden bench beneath the featured print.
 
-![The dark print wing with a timber ceiling, charcoal walls, and a broad passage between rooms](docs/screenshots/print-wing.jpg)
+![The dark print wing with a timber ceiling, smoked oak flooring, and a broad passage between rooms](docs/screenshots/print-wing.jpg)
 
 ### Passages between rooms
 
@@ -59,7 +59,7 @@ The 3D viewer uses WebGL 2. The **Photos** index provides a browser-based way to
 ## How it works
 
 - **Floor plans.** The number of supplied photographs determines the room count, with up to seven rooms in a 50-photo exhibition. The ordered aspect ratios seed a deterministic layout with varied room dimensions and positions. Connected corridors make every room walkable. Wall placement reserves door clearance and keeps the original image proportions.
-- **Renderer.** Three.js draws the scene at eye level. The courtyard uses a static shadow map for the glazing and the olive tree. Procedural materials and custom GLSL give the stone varied slabs, shaded joints, and contact shading beside the limestone seat. The print wing uses grain-mapped timber, graphite paving, and a fixed budget of warm spotlights. The renderer redraws when the camera, viewport, or image textures change. The photograph surfaces use sRGB textures and retain their original color balance.
+- **Renderer.** Three.js draws the scene at eye level. The courtyard uses a static shadow map for the glazing and the olive tree. Procedural materials and custom GLSL give the oak floors varied boards, long grain, small knots, and a soft sheen. The print wing uses darker smoked oak and a fixed budget of warm spotlights. The renderer redraws when the camera, viewport, or image textures change. The photograph surfaces use sRGB textures and retain their original color balance.
 - **Drafts.** The browser prepares web-sized photographs for display and saves the draft in IndexedDB. It uploads each photograph separately after the creator chooses to publish.
 - **Publishing.** A Cloudflare Worker stores uploads in an R2 bucket. It verifies that all of the creator's photographs are present before publishing the exhibition manifest. Public links serve that manifest and its photographs. Upload and publish routes require the creator's authenticated session.
 
@@ -70,7 +70,7 @@ The 3D viewer uses WebGL 2. The **Photos** index provides a browser-based way to
 | [`app/world.tsx`](app/world.tsx) | Camera, mouse and touch input, and frame selection |
 | [`app/lib/gallery-layout.ts`](app/lib/gallery-layout.ts) | Room graph, corridors, and artwork placement |
 | [`app/lib/gallery-scene.ts`](app/lib/gallery-scene.ts) | Scene assembly, lighting, collision, and texture loading |
-| [`app/lib/scene-finishes.ts`](app/lib/scene-finishes.ts) | Procedural materials, stone geometry, and GLSL |
+| [`app/lib/scene-finishes.ts`](app/lib/scene-finishes.ts) | Procedural materials, oak floor geometry, and GLSL |
 | [`app/lib/olive-tree.ts`](app/lib/olive-tree.ts) | Procedural branches and instanced olive foliage |
 | [`app/api/gallery/`](app/api/gallery/) | Upload, publication, and public readback |
 

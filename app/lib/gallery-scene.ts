@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { portalGeometry } from "./gallery-architecture";
 import { createGalleryLayout, type Bounds, type GalleryConnection, type GalleryRoom, type Wall } from "./gallery-layout";
-import { addTravertineShader, finishTexture, travertineGeometry } from "./scene-finishes";
+import { addOakFloorShader, finishTexture, oakFloorGeometry } from "./scene-finishes";
 import { createOliveTree } from "./olive-tree";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
@@ -58,8 +58,13 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
   const stoneTexture = finishTexture("stone", renderer);
   const woodTexture = finishTexture("oak", renderer);
   const plaster = new THREE.MeshStandardMaterial({ color: "#d9cbb9", map: plasterTexture, roughness: 0.96 });
-  const floor = new THREE.MeshStandardMaterial({ color: "#bbaa92", map: stoneTexture, bumpMap: plasterTexture, bumpScale: 0.018, roughness: 0.56 });
-  addTravertineShader(floor);
+  const warmOakFloor = new THREE.MeshStandardMaterial({ color: "#b19a77", roughness: 0.46 });
+  const entranceOakFloor = warmOakFloor.clone();
+  const smokedOakFloor = new THREE.MeshStandardMaterial({ color: "#6e5743", roughness: 0.52 });
+  const oakJoints = new THREE.MeshStandardMaterial({ color: "#765c40", roughness: 0.82 });
+  addOakFloorShader(warmOakFloor);
+  addOakFloorShader(entranceOakFloor, [entrance.bounds.minX + 0.78 - entrance.x, 0.36], true);
+  addOakFloorShader(smokedOakFloor);
   const trim = new THREE.MeshStandardMaterial({ color: "#635342", roughness: 0.82 });
   const frame = new THREE.MeshStandardMaterial({ color: "#463326", roughness: 0.72 });
   const mat = new THREE.MeshStandardMaterial({ color: "#f7f0e1", roughness: 0.9 });
@@ -69,16 +74,9 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
   });
   const creamCeiling = limestone.clone();
   creamCeiling.emissiveIntensity = 0.40;
-  const palePaving = new THREE.MeshStandardMaterial({
-    color: "#c6b69b", map: stoneTexture, bumpMap: plasterTexture, bumpScale: 0.014, roughness: 0.45,
-  });
   const charcoal = new THREE.MeshStandardMaterial({
     color: "#635a4f", map: plasterTexture, bumpMap: plasterTexture, bumpScale: 0.039, roughness: 0.86,
     emissive: "#67594c", emissiveIntensity: 0.16,
-  });
-  const graphite = new THREE.MeshStandardMaterial({
-    color: "#473f35", map: stoneTexture, bumpMap: plasterTexture, bumpScale: 0.014, roughness: 0.27, metalness: 0.05,
-    emissive: "#625044", emissiveMap: stoneTexture, emissiveIntensity: 0.13,
   });
   const darkOak = new THREE.MeshStandardMaterial({
     color: "#594130", map: woodTexture, bumpMap: woodTexture, bumpScale: 0.027, roughness: 0.60,
@@ -88,10 +86,7 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
   benchWood.emissiveIntensity = 0.13;
   const bronze = new THREE.MeshStandardMaterial({ color: "#615043", metalness: 0.36, roughness: 0.36 });
   const glass = new THREE.MeshBasicMaterial({ color: "#e6e9e2", transparent: true, opacity: 0.065, side: THREE.DoubleSide, depthWrite: false });
-  const daylightFloor = palePaving.clone();
   const charcoalTrim = new THREE.MeshStandardMaterial({ color: "#302820", roughness: 0.61 });
-  addTravertineShader(daylightFloor, [entrance.bounds.minX + 0.78 - entrance.x, 0.36], true);
-  addTravertineShader(graphite);
   const passageLight = new THREE.MeshBasicMaterial({ color: "#fff5e2", toneMapped: false });
   const shadow = createShadow();
   const group = new THREE.Group();
@@ -137,8 +132,10 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
     const print = isPrintRoom(index);
     const wallFinish = court ? limestone : print ? charcoal : plaster;
     const start = group.children.length;
-    const paving = court ? daylightFloor : print ? graphite : floor;
-    add(travertineGeometry(width, depth), paving, x, 0, z);
+    const paving = print ? smokedOakFloor : court ? entranceOakFloor : warmOakFloor;
+    add(new THREE.PlaneGeometry(width, depth), oakJoints, x, 0.001, z).rotation.x = -Math.PI / 2;
+    const boards = add(oakFloorGeometry(width, depth, x, z), paving, x, 0, z);
+    boards.receiveShadow = true;
     box(width + 0.14, 0.19, depth + 0.14, x, FLAT_CEILING + 0.095, z, print ? darkOak : creamCeiling);
 
     for (const wall of WALLS) {
@@ -272,7 +269,7 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
         object.traverse((child) => {
           if (!(child instanceof THREE.Mesh) || child.material === glass
             || (child instanceof THREE.InstancedMesh && child.receiveShadow)) return;
-          child.castShadow = child.material !== paving;
+          child.castShadow = child.material !== paving && child.material !== oakJoints;
           child.receiveShadow = true;
         });
       }
@@ -285,8 +282,11 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
     const x = (bounds.minX + bounds.maxX) / 2;
     const z = (bounds.minZ + bounds.maxZ) / 2;
     const runsX = fromWall === "east" || fromWall === "west";
-    const passageFloor = isPrintRoom(to) ? graphite : from === 0 ? palePaving : floor;
-    add(travertineGeometry(width, depth), passageFloor, x, 0, z);
+    const printPassage = isPrintRoom(from) || isPrintRoom(to);
+    const passageFloor = printPassage ? smokedOakFloor : warmOakFloor;
+    add(new THREE.PlaneGeometry(width, depth), oakJoints, x, 0.001, z).rotation.x = -Math.PI / 2;
+    const boards = add(oakFloorGeometry(width, depth, x, z), passageFloor, x, 0, z);
+    boards.receiveShadow = true;
     const passageWall = isPrintRoom(to) ? charcoal : from === 0 ? limestone : plaster;
     const passageHeight = 3.22;
     box(width + (runsX ? -0.58 : 0.15), 0.10, depth + (runsX ? 0.15 : -0.58),

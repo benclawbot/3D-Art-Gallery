@@ -102,7 +102,7 @@ components:
 
 ## Overview
 
-The gallery opens beside a glazed olive courtyard with flat limestone planes, then leads through offset passages to a darker print wing with graphite flooring and a flat timber ceiling. The interface borrows the proportions and typography of museum labels.
+The gallery opens beside a glazed olive courtyard with flat limestone planes and a warm oak floor, then leads through offset passages to a darker print wing with smoked oak and a flat timber ceiling. The interface borrows the proportions and typography of museum labels.
 
 - Make photographs the focal points along the walk. Frame each in a slim dark wood surround with a cream mat and a small label below.
 - Let the room occupy the full viewport. Put exhibition information, actions, and movement controls in compact panels around its edges.
@@ -118,7 +118,7 @@ Olive marks the main action, the current room, linked file selection, and the it
 
 Parchment and warm ink carry the interface. Use muted ink for instructions and counts, paper rules to divide content, and a slightly stronger border to set controls apart from the rendered room. The close-look view uses a charcoal-brown field and pale captions.
 
-Warm limestone and bronze frame the entrance. The print wing pairs charcoal plaster and graphite slabs with dark timber. Its controls use a dark brown plate, pale lettering, and a warm divider. Dark frames and cream mats surround the work. Artwork uses unlit image surfaces to preserve each photograph's colors.
+Warm limestone and bronze frame the entrance. The print wing pairs charcoal plaster, a dark timber ceiling, and smoked oak floorboards. Its controls use a dark brown plate, pale lettering, and a warm divider. Dark frames and cream mats surround the work. Artwork uses unlit image surfaces to preserve each photograph's colors.
 
 ## Typography
 
@@ -132,7 +132,7 @@ Viewer controls sit at the top corners above the full-viewport scene. On wide sc
 
 ## Elevation & Depth
 
-The interface uses flat surfaces, visible hairline rules, and tonal changes for hover. Glazing bars and leaves cast angled shadows into the entrance, while slim ceiling tracks wash the work in the print wing with warm light. Slab grain and shaded joints give the paving depth. The index adds a translucent warm-black scrim, while the full-screen photograph view uses a solid charcoal-brown backdrop.
+The interface uses flat surfaces, visible hairline rules, and tonal changes for hover. Glazing bars and leaves cast angled shadows into the entrance, while slim ceiling tracks wash the work in the print wing with warm light. Visible oak grain and shaded joints give the floors depth. The index adds a translucent warm-black scrim, while the full-screen photograph view uses a solid charcoal-brown backdrop.
 
 ## Shapes
 
