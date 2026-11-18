@@ -32,6 +32,7 @@ export default function ExhibitionView({ gallery, onExit }: { gallery: Exhibitio
   const minimumRooms = sample ? 3 : 1;
   const layout = useMemo(() => createGalleryLayout(photos.map(({ width, height }) => width / height), minimumRooms), [photos, minimumRooms]);
   const shareable = !onExit;
+  const printRoom = room > 0 && room === layout.roomCount - 1;
 
   useEffect(() => {
     if (panel && !dialog.current?.open) dialog.current?.showModal();
@@ -67,7 +68,7 @@ export default function ExhibitionView({ gallery, onExit }: { gallery: Exhibitio
   }
 
   return (
-    <main className="gallery-screen">
+    <main className={printRoom ? "gallery-screen print-room" : "gallery-screen"}>
       <GalleryWorld artworks={artworks} onArtwork={inspect} room={room} onRoom={setRoom} minimumRooms={minimumRooms}
         paused={Boolean(panel)} onFallback={() => { setFallback(true); setPanel("index"); }} />
       <header className="viewer-top">

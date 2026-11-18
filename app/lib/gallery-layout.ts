@@ -14,6 +14,8 @@ export type GalleryLayout = {
 const WALLS: Wall[] = ["west", "east", "north", "south"];
 const pitch = 13.5;
 const corridorWidth = 2.76;
+const leftOfEntry: Record<Wall, Wall> = { north: "west", west: "south", south: "east", east: "north" };
+const entryDirection: Record<Wall, [number, number]> = { north: [0, -1], east: [1, 0], south: [0, 1], west: [-1, 0] };
 
 function rngFor(aspects: number[]): () => number {
   let seed = (aspects.length + 0x9e3779b9) >>> 0;
@@ -41,18 +43,17 @@ function growCells(count: number, random: () => number): { cells: Array<{ x: num
   const cells = [{ x: 0, z: 0 }];
   const parents = [-1];
   if (count === 1) return { cells, parents };
-  // Seed a compact elbow; three rooms are never collinear and four have a branch.
-  const headings = [{ x: 1, z: 0 }, { x: 0, z: 1 }, { x: -1, z: 0 }, { x: 0, z: -1 }];
-  const first = Math.floor(random() * headings.length);
-  cells.push(headings[first]);
+  // The entry's north display wall and west courtyard frame the first view.
+  // A second wing turns off the east room, which also anchors the first branch.
+  cells.push({ x: 1, z: 0 });
   parents.push(0);
   if (count >= 3) {
-    cells.push(headings[(first + (random() > 0.5 ? 1 : 3)) % headings.length]);
-    parents.push(0);
+    cells.push({ x: 1, z: random() > 0.5 ? 1 : -1 });
+    parents.push(1);
   }
   if (count >= 4) {
-    cells.push(headings[(first + 2) % headings.length]);
-    parents.push(0);
+    cells.push({ x: 2, z: 0 });
+    parents.push(1);
   }
   while (cells.length < count) {
     const occupied = new Set(cells.map(({ x, z }) => `${x},${z}`));
@@ -61,8 +62,9 @@ function growCells(count: number, random: () => number): { cells: Array<{ x: num
       const degree = Number(parent > 0) + parents.filter((candidate) => candidate === parent).length;
       if (degree >= 3) return;
       for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (parent === 0 && (dx === -1 || dz === -1)) continue;
         const next = { x: cell.x + dx, z: cell.z + dz };
-        if (occupied.has(`${next.x},${next.z}`)) continue;
+        if (next.x < 0 || occupied.has(`${next.x},${next.z}`)) continue;
         // Favor compact growth while allowing branches and irregular outlines.
         candidates.push({ parent, cell: next, weight: 1 + Math.max(0, 5 - Math.abs(next.x) - Math.abs(next.z)) * 0.18 });
       }
@@ -111,7 +113,9 @@ export function createGalleryLayout(aspects: number[], minimumRooms = 1): Galler
       const maxX = fromWall === "east" ? b.bounds.minX : a.bounds.minX;
       const low = Math.max(a.bounds.minZ, b.bounds.minZ) + corridorWidth / 2 + 0.8;
       const high = Math.min(a.bounds.maxZ, b.bounds.maxZ) - corridorWidth / 2 - 0.8;
-      const center = low <= high ? low + random() * (high - low) : (Math.max(a.bounds.minZ, b.bounds.minZ) + Math.min(a.bounds.maxZ, b.bounds.maxZ)) / 2;
+      const fraction = random();
+      const center = low <= high ? low + (parent === 0 ? 0.46 + fraction * 0.20 : fraction) * (high - low)
+        : (Math.max(a.bounds.minZ, b.bounds.minZ) + Math.min(a.bounds.maxZ, b.bounds.maxZ)) / 2;
       bounds = { minX, maxX, minZ: center - corridorWidth / 2, maxZ: center + corridorWidth / 2 };
     } else {
       const minZ = fromWall === "south" ? a.bounds.maxZ : b.bounds.maxZ;
@@ -137,12 +141,17 @@ export function createGalleryLayout(aspects: number[], minimumRooms = 1): Galler
       if (edge.from === roomIndex) doors.set(edge.fromWall, edge.bounds);
       if (edge.to === roomIndex) doors.set(edge.toWall, edge.bounds);
     }
-    const focalWall = shuffle(WALLS.filter((wall) => !doors.has(wall)), random)[0];
+    const print = roomIndex > 0 && roomIndex === roomCount - 1;
+    const entry = connections.find((edge) => edge.to === roomIndex)?.toWall;
+    const printFocal = entry && leftOfEntry[entry];
+    const focalWall = roomIndex === 0 ? "north"
+      : print && printFocal && !doors.has(printFocal) ? printFocal
+      : shuffle(WALLS.filter((wall) => !doors.has(wall)), random)[0];
     const alongZ = (wall: Wall) => wall === "west" || wall === "east";
     function hang(photo: number, wall: Wall, along: number, maxWidth: number, feature: boolean) {
       const rawAspect = aspects[photo];
       const aspect = Number.isFinite(rawAspect) && rawAspect > 0 ? rawAspect : 1;
-      const height = Math.min(feature ? 1.90 : 1.68, maxWidth / aspect);
+      const height = Math.min(feature ? 2.36 : 1.74, maxWidth / aspect);
       const width = height * aspect;
       const x = wall === "west" ? room.bounds.minX : wall === "east" ? room.bounds.maxX : along;
       const z = wall === "north" ? room.bounds.minZ : wall === "south" ? room.bounds.maxZ : along;
@@ -163,7 +172,7 @@ export function createGalleryLayout(aspects: number[], minimumRooms = 1): Galler
       if (end - start >= 0.66) bays.push({ wall, start, end, photos: [] });
     };
     for (const wall of WALLS) {
-      if (wall === focalWall) continue;
+      if (wall === focalWall || (roomIndex === 0 && wall === "west")) continue;
       const zAxis = alongZ(wall);
       const start = (zAxis ? room.bounds.minZ : room.bounds.minX) + 0.64;
       const end = (zAxis ? room.bounds.maxZ : room.bounds.maxX) - 0.64;
@@ -181,7 +190,14 @@ export function createGalleryLayout(aspects: number[], minimumRooms = 1): Galler
         const sideWall = alongZ(bay.wall) !== alongZ(focalWall);
         return (bay.end - bay.start) / (bay.photos.length + 1) * (sideWall ? 1.16 : 1);
       }
-      const bay = bays.reduce((best, candidate) => score(candidate) > score(best) ? candidate : best);
+      let composedBay;
+      if (photo === 1 && roomIndex === 0) {
+        composedBay = bays.find((bay) => bay.wall === "east" && bay.end - bay.start > 1.55);
+      } else if (photo === 1 && print && entry) {
+        const entryBays = bays.filter((bay) => bay.wall === entry && bay.end - bay.start > 1.55);
+        composedBay = focalWall === "east" || focalWall === "south" ? entryBays.at(-1) : entryBays[0];
+      }
+      const bay = composedBay ?? bays.reduce((best, candidate) => score(candidate) > score(best) ? candidate : best);
       bay.photos.push(startIndex + photo);
     }
     for (const { wall, start, end, photos } of bays) {
@@ -192,10 +208,16 @@ export function createGalleryLayout(aspects: number[], minimumRooms = 1): Galler
     }
     // Spawn faces the uninterrupted focal wall, one metre inside the opposite wall.
     const focal = focalWall;
-    if (focal === "north") { room.spawn.x = room.x; room.spawn.z = room.bounds.maxZ - 1; room.spawn.yaw = 0; }
+    if (focal === "north") { room.spawn.x = room.x; room.spawn.z = room.bounds.maxZ - 0.82; room.spawn.yaw = roomIndex === 0 ? 0.09 : 0; }
     else if (focal === "south") { room.spawn.x = room.x; room.spawn.z = room.bounds.minZ + 1; room.spawn.yaw = Math.PI; }
     else if (focal === "west") { room.spawn.x = room.bounds.maxX - 1; room.spawn.z = room.z; room.spawn.yaw = Math.PI / 2; }
     else { room.spawn.x = room.bounds.minX + 1; room.spawn.z = room.z; room.spawn.yaw = -Math.PI / 2; }
+    if (print && entry) {
+      const entryOffset = entryDirection[entry];
+      room.spawn.x += entryOffset[0] * 0.83;
+      room.spawn.z += entryOffset[1] * 0.83;
+      room.spawn.yaw -= 0.41;
+    }
   }
   artworks.sort((a, b) => a.index - b.index);
   return { roomCount, roomForIndex, artworks, rooms, connections };

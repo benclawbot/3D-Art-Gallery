@@ -6,6 +6,9 @@
     "colorMeta": {
       "olive": { "role": "primary", "displayName": "Olive" },
       "paper": { "role": "neutral", "displayName": "Parchment" },
+      "print-control": { "role": "neutral", "displayName": "Print wing plate" },
+      "print-lettering": { "role": "neutral", "displayName": "Print wing lettering" },
+      "print-divider": { "role": "neutral", "displayName": "Print wing divider" },
       "ink": { "role": "neutral", "displayName": "Warm Ink" },
       "dark-room": { "role": "neutral", "displayName": "Charcoal Brown" }
     },
@@ -85,7 +88,7 @@
   ],
   "narrative": {
     "northStar": "A warm contemporary photography museum",
-    "overview": "The visual reference is a warm contemporary photography museum. A timber barrel vault, textured plaster, and staggered travertine paving give the gallery a material presence. Sandstone arches lead between rooms and frame the end niche. Parchment panels borrow the proportions and typography of museum labels.",
+    "overview": "The gallery opens beside a glazed olive courtyard with flat limestone planes, then leads through offset passages to a darker print wing with graphite flooring and a flat timber ceiling. The interface borrows the proportions and typography of museum labels.",
     "keyCharacteristics": [
       "Make photographs the focal points along the walk. Frame each in a slim dark wood surround with a cream mat and a small label below.",
       "Let the room occupy the full viewport. Put exhibition information, actions, and movement controls in compact panels around its edges.",

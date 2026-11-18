@@ -39,7 +39,11 @@ export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, pa
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 1.04;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     const canvas = renderer.domElement;
     host.appendChild(canvas);
     let redraw = true;
@@ -64,7 +68,7 @@ export default function GalleryWorld({ artworks, onArtwork, onRoom, room = 0, pa
       yaw = spawn.yaw + angle;
       pitch = -0.035;
     }
-    faceRoom(0, portrait ? 0 : -0.11);
+    faceRoom(0, portrait ? 0.10 : 0);
     loadNearby(0);
 
     controller.current = {

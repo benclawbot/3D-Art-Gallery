@@ -1,6 +1,6 @@
 ---
 name: Stillroom
-description: A walkable photography museum with warm mineral finishes and a quiet parchment interface.
+description: A walkable photography museum with a limestone courtyard entrance and a dark timber print wing.
 colors:
   olive: "#545c42"
   olive-hover: "#414934"
@@ -17,6 +17,9 @@ colors:
   upload-paper: "#f8f4ec"
   upload-hover: "#eee9dc"
   dark-room: "#211d18"
+  print-control: "#241f1b"
+  print-lettering: "#f6ebdc"
+  print-divider: "#66564a"
   close-look-text: "#f7eee0"
 typography:
   display:
@@ -99,7 +102,7 @@ components:
 
 ## Overview
 
-The visual reference is a warm contemporary photography museum. A timber barrel vault, textured plaster, and staggered travertine paving give the gallery a material presence. Sandstone arches lead between rooms and frame the end niche. Parchment panels borrow the proportions and typography of museum labels.
+The gallery opens beside a glazed olive courtyard with flat limestone planes, then leads through offset passages to a darker print wing with graphite flooring and a flat timber ceiling. The interface borrows the proportions and typography of museum labels.
 
 - Make photographs the focal points along the walk. Frame each in a slim dark wood surround with a cream mat and a small label below.
 - Let the room occupy the full viewport. Put exhibition information, actions, and movement controls in compact panels around its edges.
@@ -115,7 +118,7 @@ Olive marks the main action, the current room, linked file selection, and the it
 
 Parchment and warm ink carry the interface. Use muted ink for instructions and counts, paper rules to divide content, and a slightly stronger border to set controls apart from the rendered room. The close-look view uses a charcoal-brown field and pale captions.
 
-Plaster and lime are the main wall finishes. Timber grain follows the vault, sandstone lines the arches and supports the oak seats, and textured travertine with staggered joints grounds each room. Dark wood frames and cream mats surround the work. Artwork uses unlit image surfaces to preserve the photograph's colors under the room's warm lighting.
+Warm limestone and bronze frame the entrance. The print wing pairs charcoal plaster and graphite slabs with dark timber. Its controls use a dark brown plate, pale lettering, and a warm divider. Dark frames and cream mats surround the work. Artwork uses unlit image surfaces to preserve each photograph's colors.
 
 ## Typography
 
@@ -129,11 +132,11 @@ Viewer controls sit at the top corners above the full-viewport scene. On wide sc
 
 ## Elevation & Depth
 
-The interface uses flat surfaces, visible hairline rules, and tonal changes for hover. Each room has a warm, rounded skylight with a shaded diffuser and recessed rim. Slim tracks and directional wall washes light the artwork. Slab-specific grain and soft contact shadows under benches give the paving depth. The index adds a translucent warm-black scrim, while the full-screen photograph view uses a solid charcoal-brown backdrop.
+The interface uses flat surfaces, visible hairline rules, and tonal changes for hover. Glazing bars and leaves cast angled shadows into the entrance, while slim ceiling tracks wash the work in the print wing with warm light. Slab grain and shaded joints give the paving depth. The index adds a translucent warm-black scrim, while the full-screen photograph view uses a solid charcoal-brown backdrop.
 
 ## Shapes
 
-The barrel vault, skylights, arched thresholds, focal niches, and rounded oak seats repeat curved forms through the exhibition. Connected passages turn through varied room footprints, with doorway positions set by the floor plan. Picture frames and interface plates are square-cornered. Thin rules divide segments and rows. The upload area uses a dashed outline to indicate its drop target.
+Flat ceilings, deep openings with eased upper corners, and low linear benches give the rooms a consistent architectural language. Connected passages turn through varied footprints, with doorway positions set by the floor plan. Picture frames and interface plates are square-cornered. Thin rules divide segments and rows. The upload area uses a dashed outline to indicate its drop target.
 
 ## Components
 

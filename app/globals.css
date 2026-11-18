@@ -77,6 +77,23 @@ button:disabled { cursor: default; opacity: 0.55; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .gallery-screen { position: fixed; inset: 0; overflow: hidden; background: #bcae99; }
+.print-room {
+  --print-control: #241f1b;
+  --print-lettering: #f6ebdc;
+  --print-divider: #66564a;
+  background: var(--print-control);
+}
+.print-room :is(.viewer-brand, .viewer-actions, .move-hint, .gallery-caption, .room-nav, .touch-hint, .touch-pad button) {
+  color: var(--print-lettering);
+  background: var(--print-control);
+  border-color: var(--print-divider);
+}
+.print-room :is(.viewer-brand .wordmark, .viewer-brand .wordmark span, .exhibition-header .sample-label) {
+  color: var(--print-lettering);
+}
+.print-room :is(.exhibition-header, .viewer-control + .viewer-control, .move-hint kbd) { border-color: var(--print-divider); }
+.print-room :is(.viewer-control, .back-button, .room-nav button:not(.active), .touch-pad button):hover { background: #493c31; }
+.print-room :is(.viewer-top, .room-nav, .touch-pad) :focus-visible { outline-color: #e1bd87; }
 .world { position: absolute; inset: 0; touch-action: none; }
 .world canvas { display: block; width: 100%; height: 100%; }
 .world-preview { pointer-events: none; }

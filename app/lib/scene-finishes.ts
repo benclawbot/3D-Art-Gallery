@@ -27,7 +27,7 @@ function travertine(u: number, v: number, cloud: number, grain: number, pores: n
   const vein = THREE.MathUtils.smoothstep(band, 0.68, 0.99);
   const fine = Math.sin((warped * 6 + grain * 0.6) * Math.PI * 2);
   const fossil = Math.max(0, periodicNoise(u * 38, v * 79, 38, 79) - 0.31);
-  return 239 + cloud * 26 + grain * 19 - vein * (16 + cloud * 12) + fine * 4 - fossil * 78 + pores * 14;
+  return 239 + cloud * 18 + grain * 14 - vein * (9 + cloud * 8) + fine * 2 - fossil * 78 + pores * 16;
 }
 
 function oak(u: number, v: number, pores: number) {
@@ -153,28 +153,8 @@ vec2 stillroomSeatOffset = vStillroomFloor - stillroomSeat;
 stillroomSeatOffset = mix(stillroomSeatOffset, stillroomSeatOffset.yx, stillroomSeatTurn);
 float stillroomShadow = 0.17 * stillroomGroundShadow(stillroomSeatOffset + vec2(0.07, 0.11), vec2(0.92, 0.44));
 stillroomShadow += 0.30 * stillroomGroundShadow(vec2(abs(stillroomSeatOffset.x) - 0.67, stillroomSeatOffset.y), vec2(0.19, 0.21));
-diffuseColor.rgb *= mix(0.67, 1.0, stillroomGrout) * mix(0.93, 1.05, vStillroomSlab.z)
+diffuseColor.rgb *= mix(0.76, 1.0, stillroomGrout) * mix(0.93, 1.05, vStillroomSlab.z)
   * (1.0 - stillroomShadow * stillroomSeatAmount);`);
   };
   material.customProgramCacheKey = () => "stillroom-travertine-v2";
-}
-
-/** Shade the diffuser in its own coordinates, so the same light works in every room. */
-export function addSkylightShader(material: THREE.MeshBasicMaterial, radius: number, straightHalfLength: number) {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.stillroomDiffuser = { value: new THREE.Vector2(radius, straightHalfLength) };
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec2 vStillroomDiffuser;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvStillroomDiffuser = position.xz;");
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nvarying vec2 vStillroomDiffuser;\nuniform vec2 stillroomDiffuser;")
-      .replace("#include <color_fragment>", `#include <color_fragment>
-float stillroomCap = max(0.0, abs(vStillroomDiffuser.y) - stillroomDiffuser.y);
-float stillroomEdge = length(vec2(vStillroomDiffuser.x, stillroomCap)) / stillroomDiffuser.x;
-float stillroomFalloff = smoothstep(0.47, 1.0, stillroomEdge);
-float stillroomFall = smoothstep(-2.8, 3.2, vStillroomDiffuser.y);
-diffuseColor.rgb *= mix(vec3(1.03, 1.04, 1.055), vec3(0.72, 0.67, 0.60), stillroomFalloff)
-  * mix(0.94, 1.02, stillroomFall);`);
-  };
-  material.customProgramCacheKey = () => "stillroom-skylight-v2";
 }

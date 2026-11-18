@@ -1,3 +1,5 @@
+/* eslint @next/next/no-html-link-for-pages: "off" -- Use document navigation for the hosted gallery. */
+
 import { env } from "cloudflare:workers";
 import type { Metadata } from "next";
 import ExhibitionView from "../../exhibition";
