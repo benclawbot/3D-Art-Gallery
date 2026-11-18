@@ -209,8 +209,19 @@ export function createScene(artworks: WorldArtwork[], renderer: THREE.WebGLRende
       pebbles.receiveShadow = true;
       group.add(pebbles);
       const tree = createOliveTree(417);
-      tree.position.set(room.bounds.minX - 1.83, 0, z - depth * 0.24);
       tree.scale.setScalar(1.085);
+      // Measure the transformed trunk and every leaf instance, then place the whole tree
+      // outside the glazing with a consistent physical gap.
+      tree.updateMatrixWorld(true);
+      const treeBounds = new THREE.Box3().setFromObject(tree);
+      const glazingSetback = 0.68;
+      const masonryInset = 0.26;
+      const treeZ = THREE.MathUtils.clamp(
+        z - depth * 0.28,
+        z - courtDepth / 2 + masonryInset - treeBounds.min.z,
+        z + courtDepth / 2 - masonryInset - treeBounds.max.z,
+      );
+      tree.position.set(room.bounds.minX - glazingSetback - treeBounds.max.x, 0, treeZ);
       group.add(tree);
 
       const benchX = room.bounds.minX + 0.78;
